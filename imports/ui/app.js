@@ -133,6 +133,7 @@ Template.app.onCreated(function () {
   this.pantState = new ReactiveVar(blankState());
   this.calorieState = new ReactiveVar(blankState());
   this.message = new ReactiveVar('');
+  this.menuOpen = new ReactiveVar(false);
 });
 
 Template.app.onRendered(function () {
@@ -151,6 +152,9 @@ Template.app.helpers({
   },
   message() {
     return Template.instance().message.get();
+  },
+  menuOpen() {
+    return Template.instance().menuOpen.get();
   },
   currentWeight() {
     const item = latest(WeightLogs);
@@ -200,11 +204,25 @@ Template.app.helpers({
     const s = Settings.findOne();
     return s && s.goalWeight ? s.goalWeight : '';
   },
+  backfillDate() {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return formatInputDate(d);
+  },
+  hasWeightHistory() {
+    return WeightLogs.find().count() > 0;
+  },
 });
 
 Template.app.events({
+  'click .menu-toggle'(event, instance) {
+    event.preventDefault();
+    instance.menuOpen.set(!instance.menuOpen.get());
+  },
+
   'click .nav-btn'(event, instance) {
     instance.page.set(event.currentTarget.dataset.page);
+    instance.menuOpen.set(false);
     Meteor.defer(drawChart);
   },
 

@@ -1,29 +1,29 @@
 <template name="app">
   <div class="app-shell">
-    <section class="hero">
-      <div class="hero-card">
-        <h1>Progress Tracker</h1>
-        <p class="subtitle">Track weight, exercise, pant size, and calories in one simple place.</p>
-      </div>
-      <div class="summary-card">
+    <div class="topbar-card">
+      <div class="topbar-summary">
         <div class="summary-label">Current Weight</div>
         <div class="summary-weight">{{currentWeight}}</div>
         <div class="summary-goal">Goal: {{goalWeight}}</div>
         <div class="summary-delta">{{deltaText}}</div>
       </div>
-    </section>
 
-    <nav class="nav-grid">
-      <button class="nav-btn {{activeClass 'home'}}" data-page="home">Home</button>
-      <button class="nav-btn {{activeClass 'weightLog'}}" data-page="weightLog">Weigh-Ins</button>
-      <button class="nav-btn {{activeClass 'weightHistory'}}" data-page="weightHistory">Weight History</button>
-      <button class="nav-btn {{activeClass 'exercise'}}" data-page="exercise">Exercise</button>
-      <button class="nav-btn {{activeClass 'pantLog'}}" data-page="pantLog">Pant Size</button>
-      <button class="nav-btn {{activeClass 'pantHistory'}}" data-page="pantHistory">Pant History</button>
-      <button class="nav-btn {{activeClass 'calorieLog'}}" data-page="calorieLog">Calories</button>
-      <button class="nav-btn {{activeClass 'calorieHistory'}}" data-page="calorieHistory">Calorie History</button>
-      <button class="nav-btn {{activeClass 'settings'}}" data-page="settings">Settings</button>
-    </nav>
+      <div class="menu-wrap {{#if menuOpen}}open{{/if}}">
+        <button class="menu-toggle" type="button" aria-label="Open menu">☰ Menu</button>
+        <div class="menu-panel">
+          <button class="nav-btn {{activeClass 'home'}}" data-page="home">Home</button>
+          <button class="nav-btn {{activeClass 'weightLog'}}" data-page="weightLog">Weigh-Ins</button>
+          <button class="nav-btn {{activeClass 'weightBackfill'}}" data-page="weightBackfill">Backfill Weigh-Ins</button>
+          <button class="nav-btn {{activeClass 'weightHistory'}}" data-page="weightHistory">Weight History</button>
+          <button class="nav-btn {{activeClass 'exercise'}}" data-page="exercise">Exercise</button>
+          <button class="nav-btn {{activeClass 'pantLog'}}" data-page="pantLog">Pant Size</button>
+          <button class="nav-btn {{activeClass 'pantHistory'}}" data-page="pantHistory">Pant History</button>
+          <button class="nav-btn {{activeClass 'calorieLog'}}" data-page="calorieLog">Calories</button>
+          <button class="nav-btn {{activeClass 'calorieHistory'}}" data-page="calorieHistory">Calorie History</button>
+          <button class="nav-btn {{activeClass 'settings'}}" data-page="settings">Settings</button>
+        </div>
+      </div>
+    </div>
 
     {{#if message}}<p class="success-text" style="margin:0 0 16px 0;">{{message}}</p>{{/if}}
 
@@ -68,7 +68,7 @@
         <div class="split-layout">
           <div class="form-card">
             <h3>{{#if weightState.id}}Edit Weight Entry{{else}}Add Weight Entry{{/if}}</h3>
-            <p>Up to 3 weigh-ins per month.</p>
+            <p>For your regular weigh-ins. You can save up to 3 entries per month.</p>
             <form class="data-form js-weight-form">
               <input type="hidden" name="entryId" value="{{weightState.id}}">
               <label>Date <input type="date" name="logDate" required value="{{weightState.date}}"></label>
@@ -89,6 +89,36 @@
               {{/each}}
             </tbody></table></div>
             {{else}}<div class="empty-state">No weight entries yet.</div>{{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if isPage 'weightBackfill'}}
+        <div class="split-layout">
+          <div class="form-card">
+            <h3>Add Backfilled Weigh-In</h3>
+            <p>Use this for older weigh-ins you want to enter later. The same 3-per-month limit still applies.</p>
+            <form class="data-form js-weight-form">
+              <input type="hidden" name="entryId" value="">
+              <label>Date <input type="date" name="logDate" required value="{{backfillDate}}"></label>
+              <label>Weight (lbs) <input type="number" step="0.1" name="weight" required></label>
+              <div class="form-actions">
+                <button type="submit" class="primary-btn">Save Backfilled Weight</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <h3>Weight Entries by Month</h3>
+            {{#if hasWeightHistory}}
+              {{#each weightMonths}}
+                <div class="month-mini-block">
+                  <div class="month-mini-title">{{monthLabel}}</div>
+                  <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Weight</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{weight}} lbs</td></tr>{{/each}}</tbody></table></div>
+                </div>
+              {{/each}}
+            {{else}}
+              <div class="empty-state">No weight history yet.</div>
+            {{/if}}
           </div>
         </div>
       {{/if}}
@@ -186,15 +216,12 @@
       {{/if}}
 
       {{#if isPage 'settings'}}
-        <div class="split-layout">
-          <div class="form-card">
-            <h3>Goal Weight</h3>
-            <form class="data-form js-settings-form">
-              <label>Goal Weight (lbs) <input type="number" step="0.1" name="goalWeight" value="{{goalWeightValue}}"></label>
-              <div class="form-actions"><button type="submit" class="primary-btn">Save Settings</button></div>
-            </form>
-          </div>
-          <div class="tip-card"><h3>How it works</h3><p class="inline-note">The home page compares your most recent weigh-in with your saved goal weight.</p></div>
+        <div class="form-card settings-card">
+          <h3>Settings</h3>
+          <form class="data-form js-settings-form">
+            <label>Goal Weight (lbs) <input type="number" step="0.1" name="goalWeight" value="{{goalWeightValue}}"></label>
+            <div class="form-actions"><button type="submit" class="primary-btn">Save Settings</button></div>
+          </form>
         </div>
       {{/if}}
     </main>
