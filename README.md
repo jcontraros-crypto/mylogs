@@ -30,3 +30,5 @@ If Meteor reports a missing Babel runtime, run `meteor npm install` in the app f
 
 
 Compatibility note: This package is patched for newer Meteor versions that require async Mongo calls on the server (Meteor 3 style APIs).
+
+Beta 1.03
