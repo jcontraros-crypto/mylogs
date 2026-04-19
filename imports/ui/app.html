@@ -1,0 +1,202 @@
+<template name="app">
+  <div class="app-shell">
+    <section class="hero">
+      <div class="hero-card">
+        <h1>Progress Tracker</h1>
+        <p class="subtitle">Track weight, exercise, pant size, and calories in one simple place.</p>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Current Weight</div>
+        <div class="summary-weight">{{currentWeight}}</div>
+        <div class="summary-goal">Goal: {{goalWeight}}</div>
+        <div class="summary-delta">{{deltaText}}</div>
+      </div>
+    </section>
+
+    <nav class="nav-grid">
+      <button class="nav-btn {{activeClass 'home'}}" data-page="home">Home</button>
+      <button class="nav-btn {{activeClass 'weightLog'}}" data-page="weightLog">Weigh-Ins</button>
+      <button class="nav-btn {{activeClass 'weightHistory'}}" data-page="weightHistory">Weight History</button>
+      <button class="nav-btn {{activeClass 'exercise'}}" data-page="exercise">Exercise</button>
+      <button class="nav-btn {{activeClass 'pantLog'}}" data-page="pantLog">Pant Size</button>
+      <button class="nav-btn {{activeClass 'pantHistory'}}" data-page="pantHistory">Pant History</button>
+      <button class="nav-btn {{activeClass 'calorieLog'}}" data-page="calorieLog">Calories</button>
+      <button class="nav-btn {{activeClass 'calorieHistory'}}" data-page="calorieHistory">Calorie History</button>
+      <button class="nav-btn {{activeClass 'settings'}}" data-page="settings">Settings</button>
+    </nav>
+
+    {{#if message}}<p class="success-text" style="margin:0 0 16px 0;">{{message}}</p>{{/if}}
+
+    <main class="content-card">
+      {{#if isPage 'home'}}
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-label">Current Weight</div><div class="stat-value">{{currentWeight}}</div></div>
+          <div class="stat-box"><div class="stat-label">Goal Weight</div><div class="stat-value">{{goalWeight}}</div></div>
+          <div class="stat-box"><div class="stat-label">Latest Pant Size</div><div class="stat-value">{{latestPant}}</div></div>
+          <div class="stat-box"><div class="stat-label">Latest Calories</div><div class="stat-value">{{latestCalories}}</div></div>
+        </div>
+
+        <div class="home-section-grid">
+          <div class="panel">
+            <h3>Recent Weigh-Ins</h3>
+            {{#if hasWeights}}
+              <ul class="entry-list">
+                {{#each recentWeights}}
+                  <li><strong>{{weight}} lbs</strong><span class="small-note">{{formatDate createdAt}}</span></li>
+                {{/each}}
+              </ul>
+            {{else}}
+              <div class="empty-state">No weight entries yet.</div>
+            {{/if}}
+          </div>
+          <div class="panel">
+            <h3>Recent Exercise</h3>
+            {{#if hasExercise}}
+              <ul class="entry-list">
+                {{#each recentExercise}}
+                  <li><strong>{{minutes}} min</strong><span class="small-note">{{formatDate createdAt}}</span><div class="small-note">{{notes}}</div></li>
+                {{/each}}
+              </ul>
+            {{else}}
+              <div class="empty-state">No exercise entries yet.</div>
+            {{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if isPage 'weightLog'}}
+        <div class="split-layout">
+          <div class="form-card">
+            <h3>{{#if weightState.id}}Edit Weight Entry{{else}}Add Weight Entry{{/if}}</h3>
+            <p>Up to 3 weigh-ins per month.</p>
+            <form class="data-form js-weight-form">
+              <input type="hidden" name="entryId" value="{{weightState.id}}">
+              <label>Date <input type="date" name="logDate" required value="{{weightState.date}}"></label>
+              <label>Weight (lbs) <input type="number" step="0.1" name="weight" required value="{{weightState.a}}"></label>
+              <div class="form-actions">
+                <button type="submit" class="primary-btn">{{#if weightState.id}}Update Weight{{else}}Save Weight{{/if}}</button>
+                {{#if weightState.id}}<button type="button" class="secondary-btn js-cancel-weight">Cancel</button>{{/if}}
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <h3>Recent Weight Entries</h3>
+            <div class="kpi-row"><div class="kpi-pill">This month: {{currentMonthCount}} / 3</div></div>
+            {{#if hasWeights}}
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Weight</th><th>Actions</th></tr></thead><tbody>
+              {{#each weightEntries}}
+                <tr><td>{{formatDate createdAt}}</td><td>{{weight}} lbs</td><td><div class="row-actions"><button type="button" class="secondary-btn js-edit-weight" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-weight" data-id="{{_id}}">Delete</button></div></td></tr>
+              {{/each}}
+            </tbody></table></div>
+            {{else}}<div class="empty-state">No weight entries yet.</div>{{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if isPage 'weightHistory'}}
+        <div class="graph-card"><h3>Weight Trend</h3><canvas id="weightChart"></canvas></div>
+        {{#if hasWeightHistory}}
+          {{#each weightMonths}}
+            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Weight</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{weight}} lbs</td></tr>{{/each}}</tbody></table></div></div>
+          {{/each}}
+        {{else}}<div class="empty-state">No weight history yet.</div>{{/if}}
+      {{/if}}
+
+      {{#if isPage 'exercise'}}
+        <div class="split-layout">
+          <div class="form-card">
+            <h3>{{#if exerciseState.id}}Edit Exercise Entry{{else}}Add Exercise Entry{{/if}}</h3>
+            <form class="data-form js-exercise-form">
+              <input type="hidden" name="entryId" value="{{exerciseState.id}}">
+              <label>Date <input type="date" name="logDate" required value="{{exerciseState.date}}"></label>
+              <label>Minutes <input type="number" name="minutes" required value="{{exerciseState.a}}"></label>
+              <label>Notes <textarea name="notes" rows="4">{{exerciseState.b}}</textarea></label>
+              <div class="form-actions"><button type="submit" class="primary-btn">{{#if exerciseState.id}}Update Exercise{{else}}Save Exercise{{/if}}</button>{{#if exerciseState.id}}<button type="button" class="secondary-btn js-cancel-exercise">Cancel</button>{{/if}}</div>
+            </form>
+          </div>
+          <div class="panel">
+            <h3>Exercise Entries</h3>
+            {{#if hasExercise}}
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Minutes</th><th>Notes</th><th>Actions</th></tr></thead><tbody>
+            {{#each exerciseEntries}}<tr><td>{{formatDate createdAt}}</td><td>{{minutes}}</td><td>{{notes}}</td><td><div class="row-actions"><button type="button" class="secondary-btn js-edit-exercise" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-exercise" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
+            </tbody></table></div>
+            {{else}}<div class="empty-state">No exercise entries yet.</div>{{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if isPage 'pantLog'}}
+        <div class="split-layout">
+          <div class="form-card">
+            <h3>{{#if pantState.id}}Edit Pant Size Entry{{else}}Add Pant Size Entry{{/if}}</h3>
+            <form class="data-form js-pant-form">
+              <input type="hidden" name="entryId" value="{{pantState.id}}">
+              <label>Date <input type="date" name="logDate" required value="{{pantState.date}}"></label>
+              <label>Pant Size <input type="text" name="size" required value="{{pantState.a}}"></label>
+              <div class="form-actions"><button type="submit" class="primary-btn">{{#if pantState.id}}Update Pant Size{{else}}Save Pant Size{{/if}}</button>{{#if pantState.id}}<button type="button" class="secondary-btn js-cancel-pant">Cancel</button>{{/if}}</div>
+            </form>
+          </div>
+          <div class="panel">
+            <h3>Pant Size Entries</h3>
+            {{#if hasPantHistory}}
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Size</th><th>Actions</th></tr></thead><tbody>
+            {{#each pantEntries}}<tr><td>{{formatDate createdAt}}</td><td>{{size}}</td><td><div class="row-actions"><button type="button" class="secondary-btn js-edit-pant" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-pant" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
+            </tbody></table></div>
+            {{else}}<div class="empty-state">No pant size entries yet.</div>{{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if isPage 'pantHistory'}}
+        {{#if hasPantHistory}}
+          {{#each pantMonths}}
+            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Pant Size</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{size}}</td></tr>{{/each}}</tbody></table></div></div>
+          {{/each}}
+        {{else}}<div class="empty-state">No pant size history yet.</div>{{/if}}
+      {{/if}}
+
+      {{#if isPage 'calorieLog'}}
+        <div class="split-layout">
+          <div class="form-card">
+            <h3>{{#if calorieState.id}}Edit Calorie Entry{{else}}Add Calorie Entry{{/if}}</h3>
+            <form class="data-form js-calorie-form">
+              <input type="hidden" name="entryId" value="{{calorieState.id}}">
+              <label>Date <input type="date" name="logDate" required value="{{calorieState.date}}"></label>
+              <label>Calories <input type="number" name="calories" required value="{{calorieState.a}}"></label>
+              <div class="form-actions"><button type="submit" class="primary-btn">{{#if calorieState.id}}Update Calories{{else}}Save Calories{{/if}}</button>{{#if calorieState.id}}<button type="button" class="secondary-btn js-cancel-calorie">Cancel</button>{{/if}}</div>
+            </form>
+          </div>
+          <div class="panel">
+            <h3>Calorie Entries</h3>
+            {{#if hasCalories}}
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Calories</th><th>Actions</th></tr></thead><tbody>
+            {{#each calorieEntries}}<tr><td>{{formatDate createdAt}}</td><td>{{calories}}</td><td><div class="row-actions"><button type="button" class="secondary-btn js-edit-calorie" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-calorie" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
+            </tbody></table></div>
+            {{else}}<div class="empty-state">No calorie entries yet.</div>{{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if isPage 'calorieHistory'}}
+        {{#if hasCalories}}
+          {{#each calorieMonths}}
+            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Calories</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{calories}}</td></tr>{{/each}}</tbody></table></div></div>
+          {{/each}}
+        {{else}}<div class="empty-state">No calorie history yet.</div>{{/if}}
+      {{/if}}
+
+      {{#if isPage 'settings'}}
+        <div class="split-layout">
+          <div class="form-card">
+            <h3>Goal Weight</h3>
+            <form class="data-form js-settings-form">
+              <label>Goal Weight (lbs) <input type="number" step="0.1" name="goalWeight" value="{{goalWeightValue}}"></label>
+              <div class="form-actions"><button type="submit" class="primary-btn">Save Settings</button></div>
+            </form>
+          </div>
+          <div class="tip-card"><h3>How it works</h3><p class="inline-note">The home page compares your most recent weigh-in with your saved goal weight.</p></div>
+        </div>
+      {{/if}}
+    </main>
+  </div>
+</template>

@@ -1,0 +1,11 @@
+{
+  "name": "fitness-tracker-app",
+  "private": true,
+  "scripts": {
+    "start": "meteor run"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.24.0",
+    "jquery": "^4.0.0"
+  }
+}

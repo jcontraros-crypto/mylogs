@@ -1,0 +1,15 @@
+meteor-base
+mobile-experience
+mongo
+blaze-html-templates
+templating-runtime
+blaze
+jquery
+reactive-var
+tracker
+standard-minifier-css
+standard-minifier-js
+ecmascript
+shell-server
+autopublish
+insecure
