@@ -29,7 +29,20 @@
 
     <main class="content-card">
       {{#if isPage 'home'}}
+        <div class="streak-hero {{streakHotClass}}">
+          <div>
+            <div class="streak-eyebrow">Consistency streak</div>
+            <div class="streak-value">{{streakLabel}}</div>
+            <div class="streak-detail">{{streakDetail}}</div>
+          </div>
+          <div class="streak-side">
+            <div class="streak-status">{{streakStatus}}</div>
+            {{#if streakLastActive}}<div class="streak-last-active">Last log: {{streakLastActive}}</div>{{/if}}
+          </div>
+        </div>
+
         <div class="stats-grid">
+          <div class="stat-box"><div class="stat-label">Current Streak</div><div class="stat-value">{{streakDays}}</div><div class="small-note">days</div></div>
           <div class="stat-box"><div class="stat-label">Current Weight</div><div class="stat-value">{{currentWeight}}</div></div>
           <div class="stat-box"><div class="stat-label">Goal Weight</div><div class="stat-value">{{goalWeight}}</div></div>
           <div class="stat-box"><div class="stat-label">Latest Pant Size</div><div class="stat-value">{{latestPant}}</div></div>

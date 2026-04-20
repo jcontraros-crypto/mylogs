@@ -7,6 +7,7 @@ import './app.css';
 const fullDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
 const shortDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+const weekdayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
 
 function formatInputDate(date) {
   if (!date) return '';
@@ -73,6 +74,70 @@ function roundUp(value) {
   if (value <= 10) return 10;
   const magnitude = 10 ** Math.floor(Math.log10(value));
   return Math.ceil(value / magnitude) * magnitude;
+}
+
+
+function dateKey(date) {
+  const d = new Date(date);
+  d.setHours(12, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+function dayDiff(a, b) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const aDay = new Date(a);
+  const bDay = new Date(b);
+  aDay.setHours(12, 0, 0, 0);
+  bDay.setHours(12, 0, 0, 0);
+  return Math.round((aDay - bDay) / msPerDay);
+}
+
+function streakSummary() {
+  const allEntries = [
+    ...WeightLogs.find({}, { fields: { createdAt: 1 } }).fetch(),
+    ...ExerciseLogs.find({}, { fields: { createdAt: 1 } }).fetch(),
+    ...PantSizeLogs.find({}, { fields: { createdAt: 1 } }).fetch(),
+    ...CalorieLogs.find({}, { fields: { createdAt: 1 } }).fetch(),
+  ];
+
+  const uniqueDays = [...new Set(allEntries.map((item) => item.createdAt).filter(Boolean).map(dateKey))]
+    .sort()
+    .map((value) => new Date(`${value}T12:00:00`));
+
+  if (!uniqueDays.length) {
+    return {
+      days: 0,
+      label: 'No streak yet',
+      detail: 'Log weight, calories, exercise, or pant size to start your streak.',
+      status: 'Start today',
+      lastActive: '',
+      isHot: false,
+    };
+  }
+
+  let days = 1;
+  for (let i = uniqueDays.length - 1; i > 0; i -= 1) {
+    if (dayDiff(uniqueDays[i], uniqueDays[i - 1]) === 1) days += 1;
+    else break;
+  }
+
+  const lastActive = uniqueDays[uniqueDays.length - 1];
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const sinceLast = dayDiff(today, lastActive);
+
+  let status = 'Logged today';
+  if (sinceLast === 1) status = 'Last active yesterday';
+  else if (sinceLast > 1) status = `Last active ${shortDateFormatter.format(lastActive)}`;
+
+  return {
+    days,
+    label: days === 1 ? '1 day streak' : `${days} day streak`,
+    detail: `Consecutive days with at least one health log entry.`,
+    status,
+    lastActive: `${weekdayFormatter.format(lastActive)}, ${shortDateFormatter.format(lastActive)}`,
+    isHot: sinceLast <= 1,
+  };
 }
 
 function weeklySeries() {
@@ -358,6 +423,12 @@ Template.app.helpers({
     const item = latest(CalorieLogs);
     return item ? String(item.calories) : '—';
   },
+  streakDays() { return streakSummary().days; },
+  streakLabel() { return streakSummary().label; },
+  streakDetail() { return streakSummary().detail; },
+  streakStatus() { return streakSummary().status; },
+  streakLastActive() { return streakSummary().lastActive; },
+  streakHotClass() { return streakSummary().isHot ? 'is-hot' : ''; },
   recentWeights() { return WeightLogs.find({}, { sort: { createdAt: -1 }, limit: 5 }).fetch(); },
   recentExercise() { return ExerciseLogs.find({}, { sort: { createdAt: -1 }, limit: 5 }).fetch(); },
   weightEntries() { return WeightLogs.find({}, { sort: { createdAt: -1 }, limit: 20 }).fetch(); },
