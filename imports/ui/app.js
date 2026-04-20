@@ -6,6 +6,7 @@ import './app.css';
 
 const fullDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
+const shortDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
 
 function formatInputDate(date) {
   if (!date) return '';
@@ -60,15 +61,106 @@ function groupByMonth(entries) {
     });
 }
 
+function startOfWeek(date) {
+  const d = new Date(date);
+  d.setHours(12, 0, 0, 0);
+  const day = d.getDay();
+  d.setDate(d.getDate() - day);
+  return d;
+}
+
+function roundUp(value) {
+  if (value <= 10) return 10;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  return Math.ceil(value / magnitude) * magnitude;
+}
+
+function weeklySeries() {
+  const weightLogs = WeightLogs.find({}, { sort: { createdAt: 1 } }).fetch();
+  const calorieLogs = CalorieLogs.find({}, { sort: { createdAt: 1 } }).fetch();
+  const exerciseLogs = ExerciseLogs.find({}, { sort: { createdAt: 1 } }).fetch();
+
+  const allDates = [...weightLogs, ...calorieLogs, ...exerciseLogs]
+    .map((item) => item.createdAt)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!allDates.length) return [];
+
+  const firstWeek = startOfWeek(allDates[0]);
+  const lastWeek = startOfWeek(allDates[allDates.length - 1]);
+  const buckets = {};
+
+  for (let cursor = new Date(firstWeek); cursor <= lastWeek; cursor.setDate(cursor.getDate() + 7)) {
+    const key = cursor.toISOString().slice(0, 10);
+    buckets[key] = {
+      weekStart: new Date(cursor),
+      weights: [],
+      calories: 0,
+      exercise: 0,
+    };
+  }
+
+  weightLogs.forEach((item) => {
+    const key = startOfWeek(item.createdAt).toISOString().slice(0, 10);
+    if (buckets[key]) buckets[key].weights.push(Number(item.weight));
+  });
+  calorieLogs.forEach((item) => {
+    const key = startOfWeek(item.createdAt).toISOString().slice(0, 10);
+    if (buckets[key]) buckets[key].calories += Number(item.calories) || 0;
+  });
+  exerciseLogs.forEach((item) => {
+    const key = startOfWeek(item.createdAt).toISOString().slice(0, 10);
+    if (buckets[key]) buckets[key].exercise += Number(item.minutes) || 0;
+  });
+
+  return Object.values(buckets).map((bucket) => ({
+    weekStart: bucket.weekStart,
+    label: shortDateFormatter.format(bucket.weekStart),
+    weight: bucket.weights.length ? bucket.weights.reduce((sum, value) => sum + value, 0) / bucket.weights.length : null,
+    calories: bucket.calories,
+    exercise: bucket.exercise,
+  }));
+}
+
+function drawLine(ctx, points, color, width, dash = []) {
+  const usable = points.filter((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y));
+  if (!usable.length) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  usable.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawPoints(ctx, points, color, radius) {
+  points.filter(Boolean).forEach((point) => {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, radius + 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
 function drawChart() {
   const canvas = document.getElementById('weightChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const logs = WeightLogs.find({}, { sort: { createdAt: 1 } }).fetch();
-  const width = 800;
-  const height = 320;
+  const series = weeklySeries();
+  const width = 900;
+  const height = 420;
   canvas.width = width;
   canvas.height = height;
 
@@ -76,20 +168,32 @@ function drawChart() {
   ctx.fillStyle = '#fff7fb';
   ctx.fillRect(0, 0, width, height);
 
-  if (!logs.length) {
+  if (!series.length || !series.some((week) => week.weight !== null)) {
     ctx.fillStyle = '#8a6b79';
     ctx.font = '16px Arial';
     ctx.fillText('No weight data yet.', 20, 40);
     return;
   }
 
-  const pad = { top: 20, right: 20, bottom: 50, left: 50 };
+  const pad = { top: 28, right: 112, bottom: 72, left: 64 };
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
-  const vals = logs.map((x) => Number(x.weight));
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const span = Math.max(1, max - min);
+
+  const weightValues = series.map((item) => item.weight).filter((value) => value !== null);
+  const weightMin = Math.min(...weightValues);
+  const weightMax = Math.max(...weightValues);
+  const weightPadding = Math.max(2, (weightMax - weightMin) * 0.2 || 2);
+  const weightAxisMin = Math.max(0, Math.floor(weightMin - weightPadding));
+  const weightAxisMax = Math.ceil(weightMax + weightPadding);
+  const weightSpan = Math.max(1, weightAxisMax - weightAxisMin);
+
+  const calorieMax = roundUp(Math.max(...series.map((item) => item.calories), 0));
+  const exerciseMax = roundUp(Math.max(...series.map((item) => item.exercise), 0));
+
+  const xForIndex = (index) => pad.left + (series.length === 1 ? chartW / 2 : (chartW * index) / (series.length - 1));
+  const yForWeight = (value) => pad.top + ((weightAxisMax - value) / weightSpan) * chartH;
+  const yForCalories = (value) => pad.top + chartH - ((value || 0) / Math.max(calorieMax, 1)) * chartH;
+  const yForExercise = (value) => pad.top + chartH - ((value || 0) / Math.max(exerciseMax, 1)) * chartH;
 
   ctx.strokeStyle = '#ead2de';
   ctx.lineWidth = 1;
@@ -97,33 +201,82 @@ function drawChart() {
     const y = pad.top + (chartH / 4) * i;
     ctx.beginPath();
     ctx.moveTo(pad.left, y);
-    ctx.lineTo(width - pad.right, y);
+    ctx.lineTo(pad.left + chartW, y);
     ctx.stroke();
+
+    const labelValue = Math.round(weightAxisMax - (weightSpan / 4) * i);
+    ctx.fillStyle = '#8a6b79';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(labelValue), pad.left - 10, y + 4);
   }
 
-  ctx.strokeStyle = '#d85f93';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  logs.forEach((log, i) => {
-    const x = pad.left + (logs.length === 1 ? chartW / 2 : (chartW * i) / (logs.length - 1));
-    const y = pad.top + ((max - Number(log.weight)) / span) * chartH;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+  ctx.fillStyle = '#8a6b79';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'center';
+  const labelStep = series.length > 10 ? 2 : 1;
+  series.forEach((item, index) => {
+    const x = xForIndex(index);
+    if (index % labelStep === 0 || index === series.length - 1) {
+      ctx.fillText(item.label, x, height - 18);
+    }
   });
-  ctx.stroke();
 
-  logs.forEach((log, i) => {
-    const x = pad.left + (logs.length === 1 ? chartW / 2 : (chartW * i) / (logs.length - 1));
-    const y = pad.top + ((max - Number(log.weight)) / span) * chartH;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#d85f93';
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  ctx.save();
+  ctx.translate(18, pad.top + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#d85f93';
+  ctx.font = '13px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Avg Weight (lbs)', 0, 0);
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(width - 20, pad.top + chartH / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.fillStyle = '#f29f3d';
+  ctx.font = '13px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Weekly Calories', 0, 0);
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(width - 54, pad.top + chartH / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.fillStyle = '#2f7a5d';
+  ctx.font = '13px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Exercise Minutes', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = '#f29f3d';
+  ctx.textAlign = 'left';
+  ctx.font = '12px Arial';
+  for (let i = 0; i <= 4; i += 1) {
+    const y = pad.top + (chartH / 4) * i;
+    const value = Math.round((calorieMax / 4) * (4 - i));
+    ctx.fillText(String(value), pad.left + chartW + 12, y + 4);
+  }
+
+  ctx.fillStyle = '#2f7a5d';
+  ctx.textAlign = 'left';
+  for (let i = 0; i <= 4; i += 1) {
+    const y = pad.top + (chartH / 4) * i;
+    const value = Math.round((exerciseMax / 4) * (4 - i));
+    ctx.fillText(String(value), pad.left + chartW + 62, y + 4);
+  }
+
+  const weightPoints = series.map((item, index) => item.weight === null ? null : ({ x: xForIndex(index), y: yForWeight(item.weight) }));
+  const caloriePoints = series.map((item, index) => ({ x: xForIndex(index), y: yForCalories(item.calories) }));
+  const exercisePoints = series.map((item, index) => ({ x: xForIndex(index), y: yForExercise(item.exercise) }));
+
+  drawLine(ctx, caloriePoints, '#f29f3d', 2.5, [8, 5]);
+  drawLine(ctx, exercisePoints, '#2f7a5d', 2.5, [2, 6]);
+  drawLine(ctx, weightPoints, '#d85f93', 3);
+
+  drawPoints(ctx, weightPoints, '#d85f93', 4);
+  drawPoints(ctx, caloriePoints, '#f29f3d', 3);
+  drawPoints(ctx, exercisePoints, '#2f7a5d', 3);
 }
 
 Template.app.onCreated(function () {
@@ -139,6 +292,8 @@ Template.app.onCreated(function () {
 Template.app.onRendered(function () {
   this.autorun(() => {
     WeightLogs.find().fetch();
+    CalorieLogs.find().fetch();
+    ExerciseLogs.find().fetch();
     Meteor.defer(drawChart);
   });
 });
@@ -269,6 +424,7 @@ Template.app.events({
     else ExerciseLogs.insert({ ...payload, insertedAt: new Date() });
     instance.exerciseState.set(blankState());
     instance.message.set(id ? 'Exercise entry updated.' : 'Exercise entry saved.');
+    Meteor.defer(drawChart);
   },
   'click .js-edit-exercise'(event, instance) {
     const item = ExerciseLogs.findOne(event.currentTarget.dataset.id);
@@ -280,6 +436,7 @@ Template.app.events({
     ExerciseLogs.remove(event.currentTarget.dataset.id);
     instance.exerciseState.set(blankState());
     instance.message.set('Exercise entry deleted.');
+    Meteor.defer(drawChart);
   },
   'click .js-cancel-exercise'(event, instance) {
     event.preventDefault();
@@ -323,6 +480,7 @@ Template.app.events({
     else CalorieLogs.insert({ ...payload, insertedAt: new Date() });
     instance.calorieState.set(blankState());
     instance.message.set(id ? 'Calorie entry updated.' : 'Calorie entry saved.');
+    Meteor.defer(drawChart);
   },
   'click .js-edit-calorie'(event, instance) {
     const item = CalorieLogs.findOne(event.currentTarget.dataset.id);
@@ -334,6 +492,7 @@ Template.app.events({
     CalorieLogs.remove(event.currentTarget.dataset.id);
     instance.calorieState.set(blankState());
     instance.message.set('Calorie entry deleted.');
+    Meteor.defer(drawChart);
   },
   'click .js-cancel-calorie'(event, instance) {
     event.preventDefault();
