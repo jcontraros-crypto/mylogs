@@ -133,7 +133,7 @@ function streakSummary() {
   return {
     days,
     label: days === 1 ? '1 day streak' : `${days} day streak`,
-    detail: `Consecutive days with at least one health log entry.`,
+    detail: ``,
     status,
     lastActive: `${weekdayFormatter.format(lastActive)}, ${shortDateFormatter.format(lastActive)}`,
     isHot: sinceLast <= 1,
