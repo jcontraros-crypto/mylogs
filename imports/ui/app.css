@@ -175,6 +175,36 @@ input, textarea, select { font-size: 16px; }
   color: #8a5d71;
   font-weight: 600;
 }
+
+.streak-main {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 250px);
+  gap: 14px;
+  align-items: center;
+}
+.streak-copy {
+  min-width: 0;
+}
+.streak-mascot-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.streak-mascot {
+  width: min(100%, 230px);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 14px 24px rgba(113, 55, 82, 0.14));
+  animation: guinea-groove 2.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+@keyframes guinea-groove {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  25% { transform: translateY(-4px) rotate(-2deg) scale(1.01); }
+  50% { transform: translateY(-8px) rotate(0deg) scale(1.03); }
+  75% { transform: translateY(-4px) rotate(2deg) scale(1.01); }
+}
 .streak-side {
   min-width: 0;
   display: grid;
@@ -339,7 +369,37 @@ canvas { width:100%; max-width:100%; display:block; border-radius: 18px; }
     border-radius: 20px;
   }
 
-  .streak-side {
+  
+.streak-main {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 250px);
+  gap: 14px;
+  align-items: center;
+}
+.streak-copy {
+  min-width: 0;
+}
+.streak-mascot-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.streak-mascot {
+  width: min(100%, 230px);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 14px 24px rgba(113, 55, 82, 0.14));
+  animation: guinea-groove 2.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+@keyframes guinea-groove {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  25% { transform: translateY(-4px) rotate(-2deg) scale(1.01); }
+  50% { transform: translateY(-8px) rotate(0deg) scale(1.03); }
+  75% { transform: translateY(-4px) rotate(2deg) scale(1.01); }
+}
+.streak-side {
     justify-items: stretch;
   }
 
@@ -412,6 +472,20 @@ canvas { width:100%; max-width:100%; display:block; border-radius: 18px; }
 
   .graph-card canvas {
     min-height: 220px;
+  }
+}
+
+
+@media (max-width: 560px) {
+  .streak-hero {
+    padding: 14px;
+    gap: 12px;
+  }
+  .streak-mascot {
+    width: min(100%, 220px);
+  }
+  .streak-value {
+    font-size: clamp(1.7rem, 8vw, 2.3rem);
   }
 }
 

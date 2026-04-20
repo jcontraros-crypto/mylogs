@@ -30,10 +30,15 @@
     <main class="content-card">
       {{#if isPage 'home'}}
         <div class="streak-hero {{streakHotClass}}">
-          <div>
-            <div class="streak-eyebrow">Consistency streak</div>
-            <div class="streak-value">{{streakLabel}}</div>
-            <div class="streak-detail">{{streakDetail}}</div>
+          <div class="streak-main">
+            <div class="streak-copy">
+              <div class="streak-eyebrow">Consistency streak</div>
+              <div class="streak-value">{{streakLabel}}</div>
+              <div class="streak-detail">{{streakDetail}}</div>
+            </div>
+            <div class="streak-mascot-wrap">
+              <img class="streak-mascot" src="/guinea-dance.png" alt="Dancing guinea pig mascot">
+            </div>
           </div>
           <div class="streak-side">
             <div class="streak-status">{{streakStatus}}</div>
