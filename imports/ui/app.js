@@ -159,8 +159,11 @@ function drawChart() {
   if (!ctx) return;
 
   const series = weeklySeries();
-  const width = 900;
-  const height = 420;
+  const container = canvas.parentElement;
+  const containerWidth = Math.max(300, Math.floor((container && container.clientWidth) || canvas.clientWidth || 900));
+  const isMobile = window.innerWidth <= 720;
+  const width = Math.min(960, Math.max(320, containerWidth - (isMobile ? 6 : 0)));
+  const height = isMobile ? 300 : 420;
   canvas.width = width;
   canvas.height = height;
 
@@ -170,12 +173,14 @@ function drawChart() {
 
   if (!series.length || !series.some((week) => week.weight !== null)) {
     ctx.fillStyle = '#8a6b79';
-    ctx.font = '16px Arial';
+    ctx.font = `${isMobile ? 14 : 16}px Arial`;
     ctx.fillText('No weight data yet.', 20, 40);
     return;
   }
 
-  const pad = { top: 28, right: 112, bottom: 72, left: 64 };
+  const pad = isMobile
+    ? { top: 20, right: 48, bottom: 56, left: 42 }
+    : { top: 28, right: 112, bottom: 72, left: 64 };
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
 
@@ -206,77 +211,85 @@ function drawChart() {
 
     const labelValue = Math.round(weightAxisMax - (weightSpan / 4) * i);
     ctx.fillStyle = '#8a6b79';
-    ctx.font = '12px Arial';
+    ctx.font = `${isMobile ? 10 : 12}px Arial`;
     ctx.textAlign = 'right';
-    ctx.fillText(String(labelValue), pad.left - 10, y + 4);
+    ctx.fillText(String(labelValue), pad.left - 6, y + 3);
   }
 
   ctx.fillStyle = '#8a6b79';
-  ctx.font = '12px Arial';
+  ctx.font = `${isMobile ? 10 : 12}px Arial`;
   ctx.textAlign = 'center';
-  const labelStep = series.length > 10 ? 2 : 1;
+  const approxLabelSlots = Math.max(2, Math.floor(chartW / (isMobile ? 56 : 72)));
+  const labelStep = Math.max(1, Math.ceil(series.length / approxLabelSlots));
   series.forEach((item, index) => {
     const x = xForIndex(index);
     if (index % labelStep === 0 || index === series.length - 1) {
-      ctx.fillText(item.label, x, height - 18);
+      const label = isMobile
+        ? `${item.weekStart.getMonth() + 1}/${item.weekStart.getDate()}`
+        : item.label;
+      ctx.fillText(label, x, height - 18);
     }
   });
 
-  ctx.save();
-  ctx.translate(18, pad.top + chartH / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = '#d85f93';
-  ctx.font = '13px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('Avg Weight (lbs)', 0, 0);
-  ctx.restore();
+  if (!isMobile) {
+    ctx.save();
+    ctx.translate(18, pad.top + chartH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#d85f93';
+    ctx.font = '13px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Avg Weight (lbs)', 0, 0);
+    ctx.restore();
 
-  ctx.save();
-  ctx.translate(width - 20, pad.top + chartH / 2);
-  ctx.rotate(Math.PI / 2);
-  ctx.fillStyle = '#f29f3d';
-  ctx.font = '13px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('Weekly Calories', 0, 0);
-  ctx.restore();
+    ctx.save();
+    ctx.translate(width - 20, pad.top + chartH / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = '#f29f3d';
+    ctx.font = '13px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Weekly Calories', 0, 0);
+    ctx.restore();
 
-  ctx.save();
-  ctx.translate(width - 54, pad.top + chartH / 2);
-  ctx.rotate(Math.PI / 2);
-  ctx.fillStyle = '#2f7a5d';
-  ctx.font = '13px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('Exercise Minutes', 0, 0);
-  ctx.restore();
+    ctx.save();
+    ctx.translate(width - 54, pad.top + chartH / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = '#2f7a5d';
+    ctx.font = '13px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Exercise Minutes', 0, 0);
+    ctx.restore();
+  }
 
   ctx.fillStyle = '#f29f3d';
   ctx.textAlign = 'left';
-  ctx.font = '12px Arial';
+  ctx.font = `${isMobile ? 10 : 12}px Arial`;
   for (let i = 0; i <= 4; i += 1) {
     const y = pad.top + (chartH / 4) * i;
     const value = Math.round((calorieMax / 4) * (4 - i));
-    ctx.fillText(String(value), pad.left + chartW + 12, y + 4);
+    ctx.fillText(String(value), pad.left + chartW + (isMobile ? 6 : 12), y + 3);
   }
 
-  ctx.fillStyle = '#2f7a5d';
-  ctx.textAlign = 'left';
-  for (let i = 0; i <= 4; i += 1) {
-    const y = pad.top + (chartH / 4) * i;
-    const value = Math.round((exerciseMax / 4) * (4 - i));
-    ctx.fillText(String(value), pad.left + chartW + 62, y + 4);
+  if (!isMobile) {
+    ctx.fillStyle = '#2f7a5d';
+    ctx.textAlign = 'left';
+    for (let i = 0; i <= 4; i += 1) {
+      const y = pad.top + (chartH / 4) * i;
+      const value = Math.round((exerciseMax / 4) * (4 - i));
+      ctx.fillText(String(value), pad.left + chartW + 62, y + 4);
+    }
   }
 
   const weightPoints = series.map((item, index) => item.weight === null ? null : ({ x: xForIndex(index), y: yForWeight(item.weight) }));
   const caloriePoints = series.map((item, index) => ({ x: xForIndex(index), y: yForCalories(item.calories) }));
   const exercisePoints = series.map((item, index) => ({ x: xForIndex(index), y: yForExercise(item.exercise) }));
 
-  drawLine(ctx, caloriePoints, '#f29f3d', 2.5, [8, 5]);
-  drawLine(ctx, exercisePoints, '#2f7a5d', 2.5, [2, 6]);
-  drawLine(ctx, weightPoints, '#d85f93', 3);
+  drawLine(ctx, caloriePoints, '#f29f3d', isMobile ? 2 : 2.5, [8, 5]);
+  drawLine(ctx, exercisePoints, '#2f7a5d', isMobile ? 2 : 2.5, [2, 6]);
+  drawLine(ctx, weightPoints, '#d85f93', isMobile ? 2.5 : 3);
 
-  drawPoints(ctx, weightPoints, '#d85f93', 4);
-  drawPoints(ctx, caloriePoints, '#f29f3d', 3);
-  drawPoints(ctx, exercisePoints, '#2f7a5d', 3);
+  drawPoints(ctx, weightPoints, '#d85f93', isMobile ? 3 : 4);
+  drawPoints(ctx, caloriePoints, '#f29f3d', isMobile ? 2.5 : 3);
+  drawPoints(ctx, exercisePoints, '#2f7a5d', isMobile ? 2.5 : 3);
 }
 
 Template.app.onCreated(function () {
@@ -290,12 +303,21 @@ Template.app.onCreated(function () {
 });
 
 Template.app.onRendered(function () {
+  this.handleResize = () => Meteor.defer(drawChart);
+  window.addEventListener('resize', this.handleResize);
+
   this.autorun(() => {
     WeightLogs.find().fetch();
     CalorieLogs.find().fetch();
     ExerciseLogs.find().fetch();
     Meteor.defer(drawChart);
   });
+});
+
+Template.app.onDestroyed(function () {
+  if (this.handleResize) {
+    window.removeEventListener('resize', this.handleResize);
+  }
 });
 
 Template.app.helpers({

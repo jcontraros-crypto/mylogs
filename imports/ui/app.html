@@ -113,7 +113,7 @@
               {{#each weightMonths}}
                 <div class="month-mini-block">
                   <div class="month-mini-title">{{monthLabel}}</div>
-                  <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Weight</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{weight}} lbs</td></tr>{{/each}}</tbody></table></div>
+                  <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Weight</th></tr></thead><tbody>{{#each entries}}<tr><td data-label="Date">{{formatDate createdAt}}</td><td data-label="Weight">{{weight}} lbs</td></tr>{{/each}}</tbody></table></div>
                 </div>
               {{/each}}
             {{else}}
@@ -136,7 +136,7 @@
         </div>
         {{#if hasWeightHistory}}
           {{#each weightMonths}}
-            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Weight</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{weight}} lbs</td></tr>{{/each}}</tbody></table></div></div>
+            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Weight</th></tr></thead><tbody>{{#each entries}}<tr><td data-label="Date">{{formatDate createdAt}}</td><td data-label="Weight">{{weight}} lbs</td></tr>{{/each}}</tbody></table></div></div>
           {{/each}}
         {{else}}<div class="empty-state">No weight history yet.</div>{{/if}}
       {{/if}}
@@ -157,7 +157,7 @@
             <h3>Exercise Entries</h3>
             {{#if hasExercise}}
             <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Minutes</th><th>Notes</th><th>Actions</th></tr></thead><tbody>
-            {{#each exerciseEntries}}<tr><td>{{formatDate createdAt}}</td><td>{{minutes}}</td><td>{{notes}}</td><td><div class="row-actions"><button type="button" class="secondary-btn js-edit-exercise" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-exercise" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
+            {{#each exerciseEntries}}<tr><td data-label="Date">{{formatDate createdAt}}</td><td data-label="Minutes">{{minutes}}</td><td data-label="Notes">{{notes}}</td><td data-label="Actions"><div class="row-actions"><button type="button" class="secondary-btn js-edit-exercise" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-exercise" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
             </tbody></table></div>
             {{else}}<div class="empty-state">No exercise entries yet.</div>{{/if}}
           </div>
@@ -179,7 +179,7 @@
             <h3>Pant Size Entries</h3>
             {{#if hasPantHistory}}
             <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Size</th><th>Actions</th></tr></thead><tbody>
-            {{#each pantEntries}}<tr><td>{{formatDate createdAt}}</td><td>{{size}}</td><td><div class="row-actions"><button type="button" class="secondary-btn js-edit-pant" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-pant" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
+            {{#each pantEntries}}<tr><td data-label="Date">{{formatDate createdAt}}</td><td data-label="Size">{{size}}</td><td data-label="Actions"><div class="row-actions"><button type="button" class="secondary-btn js-edit-pant" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-pant" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
             </tbody></table></div>
             {{else}}<div class="empty-state">No pant size entries yet.</div>{{/if}}
           </div>
@@ -189,7 +189,7 @@
       {{#if isPage 'pantHistory'}}
         {{#if hasPantHistory}}
           {{#each pantMonths}}
-            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Pant Size</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{size}}</td></tr>{{/each}}</tbody></table></div></div>
+            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Pant Size</th></tr></thead><tbody>{{#each entries}}<tr><td data-label="Date">{{formatDate createdAt}}</td><td data-label="Pant Size">{{size}}</td></tr>{{/each}}</tbody></table></div></div>
           {{/each}}
         {{else}}<div class="empty-state">No pant size history yet.</div>{{/if}}
       {{/if}}
@@ -209,7 +209,7 @@
             <h3>Calorie Entries</h3>
             {{#if hasCalories}}
             <div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Calories</th><th>Actions</th></tr></thead><tbody>
-            {{#each calorieEntries}}<tr><td>{{formatDate createdAt}}</td><td>{{calories}}</td><td><div class="row-actions"><button type="button" class="secondary-btn js-edit-calorie" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-calorie" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
+            {{#each calorieEntries}}<tr><td data-label="Date">{{formatDate createdAt}}</td><td data-label="Calories">{{calories}}</td><td data-label="Actions"><div class="row-actions"><button type="button" class="secondary-btn js-edit-calorie" data-id="{{_id}}">Edit</button><button type="button" class="danger-btn js-delete-calorie" data-id="{{_id}}">Delete</button></div></td></tr>{{/each}}
             </tbody></table></div>
             {{else}}<div class="empty-state">No calorie entries yet.</div>{{/if}}
           </div>
@@ -219,7 +219,7 @@
       {{#if isPage 'calorieHistory'}}
         {{#if hasCalories}}
           {{#each calorieMonths}}
-            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Calories</th></tr></thead><tbody>{{#each entries}}<tr><td>{{formatDate createdAt}}</td><td>{{calories}}</td></tr>{{/each}}</tbody></table></div></div>
+            <div class="month-block"><h3>{{monthLabel}}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Calories</th></tr></thead><tbody>{{#each entries}}<tr><td data-label="Date">{{formatDate createdAt}}</td><td data-label="Calories">{{calories}}</td></tr>{{/each}}</tbody></table></div></div>
           {{/each}}
         {{else}}<div class="empty-state">No calorie history yet.</div>{{/if}}
       {{/if}}
